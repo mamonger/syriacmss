@@ -1,8 +1,19 @@
 import streamlit as st
 import os
-from PIL import Image
 import subprocess
+from PIL import Image
 import tempfile
+
+# Virtualenv activation function
+def activate_virtualenv():
+    virtualenv_name = "kraken_env"
+    virtualenv_path = os.path.expanduser(f"~/.virtualenvs/{virtualenv_name}/bin/activate")
+    activate_command = f"source {virtualenv_path} && which kraken"
+    process = subprocess.run(activate_command, shell=True, capture_output=True, text=True)
+    if process.returncode != 0:
+        raise EnvironmentError(f"Failed to activate virtualenv: {process.stderr}")
+    kraken_path = process.stdout.strip()
+    return kraken_path
 
 # Set up Streamlit app
 st.title("OCR with Kraken")
