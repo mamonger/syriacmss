@@ -8,7 +8,7 @@ import tempfile
 def activate_virtualenv():
     virtualenv_name = "kraken_env"
     virtualenv_path = os.path.expanduser(f"~/.virtualenvs/{virtualenv_name}/bin/activate")
-    activate_command = f"source {virtualenv_path} && which kraken"
+    activate_command = f"bash -c 'source {virtualenv_path} && which kraken'"
     process = subprocess.run(activate_command, shell=True, capture_output=True, text=True)
     if process.returncode != 0:
         raise EnvironmentError(f"Failed to activate virtualenv: {process.stderr}")
