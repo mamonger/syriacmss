@@ -19,10 +19,8 @@ def activate_virtualenv():
 st.title("OCR with Kraken")
 st.write("Upload an image, and we'll extract the text using Kraken OCR.")
 
-# Upload image
 uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png", "tiff"])
 
-# Select OCR options
 with st.sidebar:
     st.header("OCR Settings")
     custom_model = st.text_input("Path to Custom Kraken Model (optional)", "")
@@ -31,55 +29,49 @@ with st.sidebar:
     output_format = st.selectbox("Output Format", ["Plain Text", "JSON"])
 
 if uploaded_file:
-    # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
         tmp_file.write(uploaded_file.read())
         input_image_path = tmp_file.name
 
     st.image(input_image_path, caption="Uploaded Image", use_column_width=True)
 
-    # Run OCR on the uploaded image when the button is clicked
     if st.button("Run OCR"):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_output:
             output_path = tmp_output.name
 
-        # Build Kraken OCR command
-        command = ["kraken", "-i", input_image_path, output_path, "ocr"]
+        # Activate the virtualenv and get the Kraken executable
+        try:
+            kraken_executable = activate_virtualenv()
+        except EnvironmentError as e:
+            st.error(f"Error activating virtual environment: {e}")
+            st.stop()
 
-        # Add model if provided
+        # Build Kraken OCR command
+        command = [kraken_executable, "-i", input_image_path, output_path, "ocr"]
         if custom_model:
             command.extend(["-m", custom_model])
-
-        # Enable/disable layout analysis
         if layout_analysis:
             command.append("-l")
-
-        # Disable binarization if unchecked
         if not binarization:
             command.append("--no-binarization")
-
-        # Set output format
         if output_format == "JSON":
             command.extend(["--output-format", "json"])
 
-        # Run Kraken command
+        # Run Kraken
         try:
             result = subprocess.run(command, capture_output=True, text=True)
             if result.returncode != 0:
                 st.error(f"Error running Kraken OCR: {result.stderr}")
             else:
-                # Display the OCR output
                 with open(output_path, "r") as f:
                     ocr_text = f.read()
                 st.subheader("OCR Output")
                 if output_format == "Plain Text":
                     st.text_area("Extracted Text", ocr_text, height=300)
-                elif output_format == "JSON":
+                else:
                     st.json(ocr_text)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
-        # Clean up temporary files
         os.remove(input_image_path)
         os.remove(output_path)
-
